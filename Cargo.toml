@@ -5,7 +5,15 @@ edition = "2021"
 
 [dependencies]
 serde_json = "1.0.134"
-serde = "1.0.216"
-axum = "0.7.9"
+serde = "1.0.217"
+axum = "0.8.1"
 hyper = "1.5.2"
 tokio = {version = "1.42.0", features = ["full"]}
+sqlx = {version = "0.8.3", features = ["runtime-tokio", "postgres"]}
+dotenv = "0.15.0"
+axum-debug = "0.3.3"
+anyhow = "1.0.95"
+bcrypt = "0.16.0"
+jsonwebtoken = "9.3.0"
+chrono = "0.4.39"
+uuid = "1.11.0"

@@ -1,10 +1,8 @@
-use axum::extract::Path;
-
-pub async fn posts() -> &'static str {
+pub async fn get_posts() -> &'static str {
     "posts"
 }
 
-pub async fn post() -> &'static str {
+pub async fn get_post() -> &'static str {
     "post"
 }
 
