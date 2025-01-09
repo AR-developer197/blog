@@ -8,17 +8,7 @@ mod handlers;
 mod db;
 
 use handlers::{
-    comments, 
-    create_comments, 
-    create_post, 
-    delete_comments, 
-    delete_post, 
-    get_post, 
-    get_posts, 
-    login, 
-    modify_post, 
-    profile, 
-    register
+    comments, create_comments, create_post, delete_comments, delete_post, get_post, get_posts, login, logout, modify_post, new_access, profile, register
 };
 
 #[tokio::main]
@@ -28,6 +18,8 @@ async fn main() -> Result<(), anyhow::Error> {
     let user_routes = Router::new()
         .route("/register", post(register))
         .route("/login", post(login))
+        .route("/logout", post(logout))
+        .route("/refresh", put(new_access))
         .route("/profile/{id}", get(profile));
 
     let posts_routes = Router::new()
