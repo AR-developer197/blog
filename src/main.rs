@@ -6,21 +6,16 @@ use sqlx::PgPool;
 
 mod handlers;
 mod db;
+mod jwt;
+mod error;
 
 use handlers::{
-    comments, create_comments, create_post, delete_comments, delete_post, get_post, get_posts, login, logout, modify_post, new_access, profile, register
+    comments, create_comments, create_post, create_user_routes, delete_comments, delete_post, get_post, get_posts, modify_post
 };
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
     let pool = PgPool::connect(&dotenv::var("DB_URL_CONNECTION").unwrap()).await?;
-
-    let user_routes = Router::new()
-        .route("/register", post(register))
-        .route("/login", post(login))
-        .route("/logout", post(logout))
-        .route("/refresh", put(new_access))
-        .route("/profile/{id}", get(profile));
 
     let posts_routes = Router::new()
         .route("/", get(get_posts))
@@ -36,7 +31,7 @@ async fn main() -> Result<(), anyhow::Error> {
 
     let app = Router::new()
         .route("/", get(|| async {"hello blog"}))
-        .nest("/users", user_routes)
+        .nest("/users", create_user_routes())
         .nest("/posts", posts_routes)
         .nest("/comments", comments_routes)
         .with_state(pool);
