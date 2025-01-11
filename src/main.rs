@@ -30,7 +30,7 @@ async fn main() -> Result<(), anyhow::Error> {
         .route("/delete", delete(delete_comments));
 
     let app = Router::new()
-        .route("/", get(|| async {"hello blog"}))
+        .route("/", get(|| async {"Hello World!"}))
         .nest("/users", create_user_routes())
         .nest("/posts", posts_routes)
         .nest("/comments", comments_routes)
