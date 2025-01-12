@@ -42,8 +42,5 @@ async fn main() -> Result<(), anyhow::Error> {
 
     axum::serve(listener, app).await?;
     
-
-    
-
     Ok(())
 }

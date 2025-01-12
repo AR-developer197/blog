@@ -1,5 +1,4 @@
-use axum::Json;
-use bcrypt::{hash, verify};
+use axum::{response::IntoResponse, Json};
 use serde::Deserialize;
 use sqlx::Row;
 
@@ -9,9 +8,15 @@ use crate::{
     jwt::Token,
 };
 
-#[derive(Deserialize, Debug)]
+use validator::Validate;
+
+use super::{compare, hash_password};
+
+#[derive(Deserialize, Debug, Validate)]
 pub struct User {
+    #[validate(length(min = 6))]
     username: String,
+    #[validate(length(min = 10, max = 60))]
     password: String,
 }
 
@@ -19,7 +24,11 @@ pub async fn register(
     DatabaseConnection(mut conn): DatabaseConnection,
     Json(user): Json<User>,
 ) -> Result<&'static str, HttpError> {
-    let password = hash(user.password, 8).map_err(|e| HttpError::server_error(e.to_string()))?;
+    user.validate()
+        .map_err(|e| HttpError::unique_violation(e.to_string()))?;
+
+    let password = hash_password(user.password)
+        .map_err(|e| HttpError::new(e.to_string(), e.into_response().status()))?;
 
     sqlx::query("INSERT INTO users (username, password) VALUES($1, $2)")
         .bind(user.username)
@@ -43,8 +52,8 @@ pub async fn login(
 
     let password: String = row.get("password");
 
-    let verify_password =
-        verify(user.password, &password).map_err(|e| HttpError::server_error(e.to_string()))?;
+    let verify_password = compare(user.password, password)
+        .map_err(|e| HttpError::unauthorized(e.to_string()))?;
 
     if !verify_password {
         return Err(HttpError::unauthorized(

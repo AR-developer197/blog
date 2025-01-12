@@ -1,4 +1,4 @@
-use axum::response::{IntoResponse, Response};
+use axum::response::IntoResponse;
 use hyper::StatusCode;
 
 pub struct HttpError {
@@ -8,6 +8,7 @@ pub struct HttpError {
 
 pub enum ErrorMessage {
     WrongPassword,
+    EmptyPassword
 }
 
 impl ToString for ErrorMessage {
@@ -20,6 +21,7 @@ impl ErrorMessage {
     fn to_str(&self) -> &'static str{
         match self {
             ErrorMessage::WrongPassword => "Wrong Password",
+            ErrorMessage::EmptyPassword => "Empty Field"
         }
     }
 }
@@ -39,6 +41,13 @@ impl std::fmt::Debug for HttpError {
 }
 
 impl HttpError {
+    pub fn new(error: impl Into<String>, status: StatusCode) -> HttpError {
+        Self {
+            status,
+            message: error.into()
+        }
+    }
+
     pub fn server_error(error: impl Into<String>) -> Self {
         Self {
             status: StatusCode::INTERNAL_SERVER_ERROR,
@@ -67,13 +76,13 @@ impl HttpError {
         }
     }
 
-    pub fn into_response(self) -> Response{
-        (self.status, self.status).into_response()
+    pub fn into_error_response(self) -> (StatusCode, String) {
+        (self.status, self.message.to_string())
     }
 }
 
 impl IntoResponse for HttpError {
     fn into_response(self) -> axum::response::Response {
-        self.into_response()
+        self.into_error_response().into_response()
     }
 }
