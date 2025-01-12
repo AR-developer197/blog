@@ -8,15 +8,11 @@ use crate::{
     jwt::Token,
 };
 
-use validator::Validate;
-
 use super::{compare, hash_password};
 
-#[derive(Deserialize, Debug, Validate)]
+#[derive(Deserialize, Debug)]
 pub struct User {
-    #[validate(length(min = 6))]
     username: String,
-    #[validate(length(min = 10, max = 60))]
     password: String,
 }
 
@@ -24,8 +20,6 @@ pub async fn register(
     DatabaseConnection(mut conn): DatabaseConnection,
     Json(user): Json<User>,
 ) -> Result<&'static str, HttpError> {
-    user.validate()
-        .map_err(|e| HttpError::unique_violation(e.to_string()))?;
 
     let password = hash_password(user.password)
         .map_err(|e| HttpError::new(e.to_string(), e.into_response().status()))?;

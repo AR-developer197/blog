@@ -8,6 +8,8 @@ pub struct HttpError {
 
 pub enum ErrorMessage {
     WrongPassword,
+    ShortPassword,
+    LongPassword,
     EmptyPassword
 }
 
@@ -21,6 +23,8 @@ impl ErrorMessage {
     fn to_str(&self) -> &'static str{
         match self {
             ErrorMessage::WrongPassword => "Wrong Password",
+            ErrorMessage::ShortPassword => "Password Must Be At Least 10 Characters",
+            ErrorMessage::LongPassword => "Password Must Be Less Than 60 Characters",
             ErrorMessage::EmptyPassword => "Empty Field"
         }
     }

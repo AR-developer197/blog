@@ -23,6 +23,14 @@ pub fn hash_password(password: String) -> Result<String, HttpError> {
         return Err(HttpError::unique_violation(ErrorMessage::EmptyPassword.to_string()));
     }
     
+    if password.len() < 10 {
+        return Err(HttpError::unique_violation(ErrorMessage::ShortPassword.to_string()));
+    }
+
+    if password.len() > 60 {
+        return Err(HttpError::unique_violation(ErrorMessage::LongPassword.to_string()));
+    }
+
     let password = hash(password, 8).map_err(|e| HttpError::server_error(e.to_string()))?;
 
     Ok(password)
@@ -32,6 +40,14 @@ pub fn compare(password: String, hash: String) -> Result<bool, HttpError> {
 
     if password.trim().is_empty() {
         return Err(HttpError::unique_violation(ErrorMessage::EmptyPassword.to_string()));
+    }
+    
+    if password.len() < 10 {
+        return Err(HttpError::unique_violation(ErrorMessage::ShortPassword.to_string()));
+    }
+
+    if password.len() > 60 {
+        return Err(HttpError::unique_violation(ErrorMessage::LongPassword.to_string()));
     }
 
     let verify_password =
