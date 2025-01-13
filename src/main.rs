@@ -8,6 +8,7 @@ mod handlers;
 mod db;
 mod jwt;
 mod error;
+mod middleware;
 
 use handlers::{
     comments, create_comments, create_post, create_user_routes, delete_comments, delete_post, get_post, get_posts, modify_post

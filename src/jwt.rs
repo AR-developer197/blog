@@ -34,10 +34,9 @@ impl Token {
     }
     
     pub fn new_token(aud: String, env_secret_name: &str, exp: i64) -> Result<Token, HttpError> {
-        let current_time = chrono::Utc::now();
-        let exp = (current_time + chrono::Duration::minutes(exp)).timestamp() as u64;
+        let current_time= time::Duration::minutes(3).whole_seconds() as u64;
         
-        let claims = Claims { aud, exp };
+        let claims = Claims { aud, exp: exp.try_into().unwrap() };
      
         let token = encode(
             &Header::default(), 

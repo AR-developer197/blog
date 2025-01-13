@@ -1,4 +1,8 @@
 use axum::{response::IntoResponse, Json};
+use axum_extra::extract::cookie::{self, Cookie, Expiration};
+
+use axum_extra::extract::cookie::Expiration::DateTime;
+
 use serde::Deserialize;
 use sqlx::Row;
 
@@ -37,7 +41,7 @@ pub async fn register(
 pub async fn login(
     DatabaseConnection(mut conn): DatabaseConnection,
     Json(user): Json<User>,
-) -> Result<Json<(Token, Token)>, HttpError> {
+) -> Result<Json<Token>, HttpError> {
     let row = sqlx::query("SELECT * FROM users WHERE username = $1")
         .bind(user.username)
         .fetch_one(&mut *conn)
@@ -60,7 +64,14 @@ pub async fn login(
     let access = Token::new_token(row.get("username"), "access_secret", 1)?;
     let refresh = Token::new_token(row.get("username"), "refresh_secret", 3)?;
 
-    Ok(Json((access, refresh)))
+    let cookie_duration = time::Duration::minutes(3);
+    let cookie = Cookie::build(("refresh_token", refresh.token))
+        .secure(true)
+        .http_only(true)
+        .max_age(cookie_duration)
+        .build();
+
+    Ok(Json(access))
 }
 
 pub async fn logout(Json(body): Json<Token>) -> Result<Json<String>, HttpError> {
