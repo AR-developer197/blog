@@ -10,7 +10,8 @@ pub enum ErrorMessage {
     WrongPassword,
     ShortPassword,
     LongPassword,
-    EmptyPassword
+    EmptyPassword,
+    SessionCookieMissing
 }
 
 impl ToString for ErrorMessage {
@@ -25,7 +26,8 @@ impl ErrorMessage {
             ErrorMessage::WrongPassword => "Wrong Password",
             ErrorMessage::ShortPassword => "Password Must Be At Least 10 Characters",
             ErrorMessage::LongPassword => "Password Must Be Less Than 60 Characters",
-            ErrorMessage::EmptyPassword => "Empty Field"
+            ErrorMessage::EmptyPassword => "Empty Field",
+            ErrorMessage::SessionCookieMissing => "Session Cookie Doesnt Exists"
         }
     }
 }
