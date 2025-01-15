@@ -17,7 +17,7 @@ use handlers::{
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
     let pool = PgPool::connect(&dotenv::var("DB_URL_CONNECTION").unwrap()).await?;
-
+    
     let posts_routes = Router::new()
         .route("/", get(get_posts))
         .route("/get/{id}", get(get_post))
