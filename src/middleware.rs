@@ -21,7 +21,7 @@ use crate::{error::{ErrorMessage, HttpError}, jwt::Token};
 //     Ok(().into_response())
 // }
 
-pub async fn validate_ref(jar: CookieJar, mut req: Request, next: Next) -> Result<Response, HttpError> {
+pub async fn auth(jar: CookieJar, mut req: Request, next: Next) -> Result<Response, HttpError> {
     let cookie = jar.get("refresh_token")
         .map(|cookie| cookie.value().to_owned());
 

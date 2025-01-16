@@ -11,7 +11,7 @@ pub struct Token {
     pub token: String
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Claims {
     pub aud: String,
     pub exp: u64,

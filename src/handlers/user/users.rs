@@ -1,11 +1,13 @@
+use axum::extract::Path;
+use axum::Extension;
 use axum::{response::IntoResponse, Json};
-use axum_extra::extract::cookie::{self, Cookie, Expiration};
+use axum_extra::extract::cookie::Cookie;
 
-use axum_extra::extract::cookie::Expiration::DateTime;
 
 use serde::Deserialize;
 use sqlx::Row;
 
+use crate::jwt::Claims;
 use crate::{
     db::DatabaseConnection,
     error::{ErrorMessage, HttpError},
@@ -65,7 +67,7 @@ pub async fn login(
     let refresh = Token::new_token(row.get("username"), "refresh_secret", 3)?;
 
     let cookie_duration = time::Duration::minutes(3);
-    let cookie = Cookie::build(("refresh_token", refresh.token))
+    Cookie::build(("refresh_token", refresh.token))
         .secure(true)
         .http_only(true)
         .max_age(cookie_duration)
@@ -84,20 +86,32 @@ pub async fn logout(Json(body): Json<Token>) -> Result<Json<String>, HttpError> 
     Ok(Json("User Has Been Logged Off".to_owned()))
 }
 
-pub async fn profile(Json(body): Json<Token>) -> Result<Json<String>, HttpError> {
+pub async fn profile(
+    DatabaseConnection(mut conn): DatabaseConnection,
+    Path(username): Path<String>, 
+    Json(body): Json<Token>
+) -> Result<Json<String>, HttpError> {
     let claims = body
         .validate_token("access_secrets")
         .map_err(|e| HttpError::forbidden(e.to_string()))?;
 
-    Ok(Json(claims.aud.to_owned()))
+    if claims.aud == username {
+        return Ok(Json(claims.aud.to_owned()));
+    };
+
+    let rows = sqlx::query("SELECT * FROM users WHERE username = ?")
+        .bind(username)
+        .fetch_one(&mut *conn)
+        .await
+        .map_err(|e| HttpError::unique_violation(e.to_string()))?;
+
+    let user: String = rows.get("username");
+
+    Ok(Json(user))
 }
 
-pub async fn new_access(Json(body): Json<Token>) -> Result<Json<Token>, HttpError> {
-    let claims = body
-        .validate_token("refresh_secret")
-        .map_err(|e| HttpError::unauthorized(e.to_string()))?;
-
-    let token = Token::new_token(claims.aud, "access_secret", 1)
+pub async fn new_access(Extension(claims): Extension<Json<Claims>>) -> Result<Json<Token>, HttpError> {
+    let token = Token::new_token(claims.aud.clone(), "access_secret", 1)
         .map_err(|e| HttpError::server_error(e.to_string()))?;
 
     Ok(Json(token))
