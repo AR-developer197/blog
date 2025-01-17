@@ -1,8 +1,9 @@
 use axum::extract::Path;
+use axum::response::Response;
 use axum::Extension;
 use axum::{response::IntoResponse, Json};
-use axum_extra::extract::cookie::Cookie;
-
+use axum_extra::extract::cookie::{self, Cookie};
+use axum::http::{header, HeaderMap};
 
 use serde::Deserialize;
 use sqlx::Row;
@@ -43,7 +44,7 @@ pub async fn register(
 pub async fn login(
     DatabaseConnection(mut conn): DatabaseConnection,
     Json(user): Json<User>,
-) -> Result<Json<Token>, HttpError> {
+) -> Result<Response, HttpError> {
     let row = sqlx::query("SELECT * FROM users WHERE username = $1")
         .bind(user.username)
         .fetch_one(&mut *conn)
@@ -60,20 +61,37 @@ pub async fn login(
             ErrorMessage::WrongPassword.to_string(),
         ));
     }
-
-    Token::create_secret("access_secret");
-    Token::create_secret("refresh_secret");
+    
     let access = Token::new_token(row.get("username"), "access_secret", 1)?;
     let refresh = Token::new_token(row.get("username"), "refresh_secret", 3)?;
 
     let cookie_duration = time::Duration::minutes(3);
-    Cookie::build(("refresh_token", refresh.token))
+    let cookie = Cookie::build(("refresh_token", refresh.token))
+        .path("/")
         .secure(true)
         .http_only(true)
         .max_age(cookie_duration)
+        .same_site(cookie::SameSite::Lax) 
         .build();
 
-    Ok(Json(access))
+    println!("ss");
+
+    let mut headers = HeaderMap::new();
+
+    headers.append(
+        header::SET_COOKIE,
+        cookie.to_string().parse().unwrap(), 
+    );
+
+    let response = Json(access);
+
+    let mut response = response.into_response();
+        
+    response
+        .headers_mut()
+        .extend(headers);
+
+    Ok(response)
 }
 
 pub async fn logout(Json(body): Json<Token>) -> Result<Json<String>, HttpError> {
@@ -111,6 +129,7 @@ pub async fn profile(
 }
 
 pub async fn new_access(Extension(claims): Extension<Json<Claims>>) -> Result<Json<Token>, HttpError> {
+    Token::create_secret("access_secret");
     let token = Token::new_token(claims.aud.clone(), "access_secret", 1)
         .map_err(|e| HttpError::server_error(e.to_string()))?;
 
