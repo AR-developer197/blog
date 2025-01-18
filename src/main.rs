@@ -1,8 +1,10 @@
 use std::net::SocketAddr;
 
-use axum::{middleware::from_fn, routing::{delete, get, post, put}, Router};
+use axum::{http::HeaderValue, middleware::from_fn, routing::{delete, get, post, put}, Router};
+use hyper::{header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE}, Method};
 use middleware::auth;
 use tokio::net::TcpListener;
+use tower_http::cors::CorsLayer;
 use sqlx::PgPool;
 
 mod handlers;
@@ -33,12 +35,21 @@ async fn main() -> std::io::Result<()> {
         .route("/delete", delete(delete_comments))
         .layer(from_fn(auth));
 
+    let cors = CorsLayer::new()
+        .allow_origin("http://localhost:3000".parse::<HeaderValue>().unwrap())
+        .allow_headers([AUTHORIZATION, ACCEPT, CONTENT_TYPE])
+        .allow_credentials(true)
+        .allow_methods([Method::GET, Method::POST,Method::PUT]);
+
     let app = Router::new()
         .route("/", get(|| async {"Hello World!"}))
         .nest("/users", create_user_routes())
         .nest("/posts", posts_routes)
         .nest("/comments", comments_routes)
-        .with_state(pool);
+        .with_state(pool)
+        .layer(cors);
+
+
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 8080));
 

@@ -1,5 +1,6 @@
 use axum::{body::{to_bytes, Bytes}, extract::{FromRequest, Request}, middleware::Next, response::{IntoResponse, Response}, Json};
 use axum_extra::extract::CookieJar;
+use hyper::header;
 use serde::Serialize;
 
 use crate::{error::{ErrorMessage, HttpError}, jwt::Token};
@@ -23,14 +24,23 @@ use crate::{error::{ErrorMessage, HttpError}, jwt::Token};
 
 pub async fn auth(jar: CookieJar, mut req: Request, next: Next) -> Result<Response, HttpError> {
 
-    for cookie in jar.iter() {
-        println!("Received cookie: {}", cookie.value());
-    }
+        let cookies = jar
+        .get("refresh_token")
+        .map(|cookie| cookie.value().to_string())
+        .or_else(|| {
+            req.headers()
+                .get(header::AUTHORIZATION)
+                .and_then(|auth_header| auth_header.to_str().ok())
+                .and_then(|auth_value| {
+                    if auth_value.starts_with("Bearer ") {
+                        Some(auth_value[7..].to_owned())
+                    } else {
+                        None
+                    }
+                })  
+        });
 
-    let cookie = jar.get("refresh_token")
-        .map(|cookie| cookie.value().to_owned());
-
-    let token = cookie
+    let token = cookies
         .ok_or_else(|| HttpError::unauthorized(ErrorMessage::SessionCookieMissing.to_string()))?;
 
     println!("ye0");
