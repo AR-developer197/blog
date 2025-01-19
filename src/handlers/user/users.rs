@@ -62,19 +62,16 @@ pub async fn login(
         ));
     }
     
+    Token::create_secret("access_secret");
+    Token::create_secret("refresh_secret");
     let access = Token::new_token(row.get("username"), "access_secret", 1)?;
     let refresh = Token::new_token(row.get("username"), "refresh_secret", 3)?;
 
     let cookie_duration = time::Duration::minutes(3);
     let cookie = Cookie::build(("refresh_token", refresh.token))
         .path("/")
-        .secure(true)
-        .http_only(true)
         .max_age(cookie_duration)
-        .same_site(cookie::SameSite::Lax) 
         .build();
-
-    println!("ss");
 
     let mut headers = HeaderMap::new();
 
@@ -109,12 +106,13 @@ pub async fn profile(
     Path(username): Path<String>, 
     Json(body): Json<Token>
 ) -> Result<Json<String>, HttpError> {
+    println!("this shoudl appear");
     let claims = body
-        .validate_token("access_secrets")
+        .validate_token("access_secret")
         .map_err(|e| HttpError::forbidden(e.to_string()))?;
 
-    if claims.aud == username {
-        return Ok(Json(claims.aud.to_owned()));
+    if claims.sub == username {
+        return Ok(Json(claims.sub.to_owned()));
     };
 
     let rows = sqlx::query("SELECT * FROM users WHERE username = ?")
@@ -130,7 +128,7 @@ pub async fn profile(
 
 pub async fn new_access(Extension(claims): Extension<Json<Claims>>) -> Result<Json<Token>, HttpError> {
     Token::create_secret("access_secret");
-    let token = Token::new_token(claims.aud.clone(), "access_secret", 1)
+    let token = Token::new_token(claims.sub.clone(), "access_secret", 1)
         .map_err(|e| HttpError::server_error(e.to_string()))?;
 
     Ok(Json(token))

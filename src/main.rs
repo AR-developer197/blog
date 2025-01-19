@@ -26,14 +26,12 @@ async fn main() -> std::io::Result<()> {
         .route("/get/{id}", get(get_post))
         .route("/create", post(create_post))
         .route("/modify/{id}", put(modify_post))
-        .route("/delete/{id}", delete(delete_post))
-        .layer(from_fn(auth));
+        .route("/delete/{id}", delete(delete_post));
 
     let comments_routes = Router::new()
         .route("/", get(comments))
         .route("/create", post(create_comments))
-        .route("/delete", delete(delete_comments))
-        .layer(from_fn(auth));
+        .route("/delete", delete(delete_comments));
 
     let cors = CorsLayer::new()
         .allow_origin("http://localhost:3000".parse::<HeaderValue>().unwrap())

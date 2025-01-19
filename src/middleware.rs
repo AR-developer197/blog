@@ -26,29 +26,17 @@ pub async fn auth(jar: CookieJar, mut req: Request, next: Next) -> Result<Respon
 
         let cookies = jar
         .get("refresh_token")
-        .map(|cookie| cookie.value().to_string())
-        .or_else(|| {
-            req.headers()
-                .get(header::AUTHORIZATION)
-                .and_then(|auth_header| auth_header.to_str().ok())
-                .and_then(|auth_value| {
-                    if auth_value.starts_with("Bearer ") {
-                        Some(auth_value[7..].to_owned())
-                    } else {
-                        None
-                    }
-                })  
-        });
+        .map(|cookie| cookie.value().to_string());
 
     let token = cookies
         .ok_or_else(|| HttpError::unauthorized(ErrorMessage::SessionCookieMissing.to_string()))?;
 
-    println!("ye0");
-
-    let claims = (Token{token}).validate_token("refresh_token")
+    let claims = (Token{token}).validate_token("refresh_secret")
         .map_err(|e| HttpError::unauthorized(e.to_string()))?;
-
+    
     next.run(req).await;
+
+    
 
     Ok(Json(claims).into_response())
 }

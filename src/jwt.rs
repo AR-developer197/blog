@@ -1,5 +1,6 @@
-use std::env;
+use std::{collections::HashSet, env};
 
+use chrono::{Duration, Utc};
 use serde::{Deserialize, Serialize};
 use jsonwebtoken::{self, decode, encode, EncodingKey, Header, DecodingKey, Validation, Algorithm};
 use uuid::Uuid;
@@ -13,8 +14,8 @@ pub struct Token {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Claims {
-    pub aud: String,
-    pub exp: u64,
+    pub sub: String,
+    pub exp: usize,
 }
 
 impl Token {
@@ -24,23 +25,39 @@ impl Token {
     }
     
     pub fn validate_token(&self, env_secret_name: &str) -> Result<Claims, HttpError> {
-        let key = &DecodingKey::from_secret(env::var(env_secret_name).unwrap().as_bytes());
-        let validation = &Validation::new(Algorithm::HS256);
+        let secret = env::var(env_secret_name).unwrap();
+        let key = secret.as_ref();
+        let key = &DecodingKey::from_secret(key);
+
+        let validation = &mut Validation::new(Algorithm::HS256);
+
+
+        println!("validating");
     
         let token_data = decode::<Claims>(&self.token, key, validation)
             .map_err(|e| HttpError::unauthorized(e.to_string()))?;
 
+        println!("validated");
+
         Ok(token_data.claims)
     }
     
-    pub fn new_token(aud: String, env_secret_name: &str, exp: i64) -> Result<Token, HttpError> {
-        let claims = Claims { aud, exp: exp.try_into().unwrap() };
+    pub fn new_token(sub: String, env_secret_name: &str, exp: i64) -> Result<Token, HttpError> {
+        let now = Utc::now();
+        let exp = (now + Duration::minutes(exp)).timestamp() as usize;
+        let claims = Claims { sub, exp };
+
+        let key = env::var(env_secret_name)
+        .map_err(|e| HttpError::unique_violation(e.to_string()))?;
+
+        let key = &EncodingKey::from_secret(key.as_ref());
+
+        
      
-        Token::create_secret(env_secret_name);
         let token = encode(
             &Header::default(), 
             &claims,  
-            &EncodingKey::from_secret(std::env::var(env_secret_name).unwrap().as_bytes())
+            key
         )
             .map_err(|e| HttpError::server_error(e.to_string()))?;
 
