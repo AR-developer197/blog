@@ -31,13 +31,8 @@ impl Token {
 
         let validation = &mut Validation::new(Algorithm::HS256);
 
-
-        println!("validating");
-    
         let token_data = decode::<Claims>(&self.token, key, validation)
             .map_err(|e| HttpError::unauthorized(e.to_string()))?;
-
-        println!("validated");
 
         Ok(token_data.claims)
     }
@@ -47,17 +42,12 @@ impl Token {
         let exp = (now + Duration::minutes(exp)).timestamp() as usize;
         let claims = Claims { sub, exp };
 
-        let key = env::var(env_secret_name)
-        .map_err(|e| HttpError::unique_violation(e.to_string()))?;
-
-        let key = &EncodingKey::from_secret(key.as_ref());
-
-        
+        Token::create_secret(env_secret_name);       
      
         let token = encode(
             &Header::default(), 
             &claims,  
-            key
+            &EncodingKey::from_secret(env::var(env_secret_name).unwrap().as_ref())
         )
             .map_err(|e| HttpError::server_error(e.to_string()))?;
 

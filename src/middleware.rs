@@ -36,7 +36,5 @@ pub async fn auth(jar: CookieJar, mut req: Request, next: Next) -> Result<Respon
     
     next.run(req).await;
 
-    
-
     Ok(Json(claims).into_response())
 }

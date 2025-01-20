@@ -62,8 +62,6 @@ pub async fn login(
         ));
     }
     
-    Token::create_secret("access_secret");
-    Token::create_secret("refresh_secret");
     let access = Token::new_token(row.get("username"), "access_secret", 1)?;
     let refresh = Token::new_token(row.get("username"), "refresh_secret", 3)?;
 
@@ -71,6 +69,7 @@ pub async fn login(
     let cookie = Cookie::build(("refresh_token", refresh.token))
         .path("/")
         .max_age(cookie_duration)
+        .http_only(true)
         .build();
 
     let mut headers = HeaderMap::new();
@@ -106,7 +105,6 @@ pub async fn profile(
     Path(username): Path<String>, 
     Json(body): Json<Token>
 ) -> Result<Json<String>, HttpError> {
-    println!("this shoudl appear");
     let claims = body
         .validate_token("access_secret")
         .map_err(|e| HttpError::forbidden(e.to_string()))?;
