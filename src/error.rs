@@ -61,7 +61,7 @@ impl HttpError {
         }
     }
 
-    pub fn unauthorized(error: impl Into<String>) -> Self {
+    pub fn unauthorized(error: impl Into<String> + std::fmt::Debug) -> Self {
         Self {
             status: StatusCode::UNAUTHORIZED,
             message: error.into()
@@ -89,6 +89,7 @@ impl HttpError {
 
 impl IntoResponse for HttpError {
     fn into_response(self) -> axum::response::Response {
+        println!("{:#?}", self);
         self.into_error_response().into_response()
     }
 }

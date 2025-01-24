@@ -1,8 +1,7 @@
 use std::net::SocketAddr;
 
-use axum::{http::HeaderValue, middleware::from_fn, routing::{delete, get, post, put}, Router};
+use axum::{http::HeaderValue, routing::{delete, get, post, put}, Router};
 use hyper::{header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE}, Method};
-use middleware::auth;
 use tokio::net::TcpListener;
 use tower_http::cors::CorsLayer;
 use sqlx::PgPool;

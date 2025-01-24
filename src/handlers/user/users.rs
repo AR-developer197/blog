@@ -2,7 +2,7 @@ use axum::extract::Path;
 use axum::response::Response;
 use axum::Extension;
 use axum::{response::IntoResponse, Json};
-use axum_extra::extract::cookie::{self, Cookie};
+use axum_extra::extract::cookie::Cookie;
 use axum::http::{header, HeaderMap};
 
 use serde::Deserialize;
@@ -65,7 +65,7 @@ pub async fn login(
     let access = Token::new_token(row.get("username"), "access_secret", 1)?;
     let refresh = Token::new_token(row.get("username"), "refresh_secret", 3)?;
 
-    let cookie_duration = time::Duration::minutes(3);
+    let cookie_duration = time::Duration::minutes(3).abs();
     let cookie = Cookie::build(("refresh_token", refresh.token))
         .path("/")
         .max_age(cookie_duration)
@@ -92,7 +92,7 @@ pub async fn login(
 
 pub async fn logout(Json(body): Json<Token>) -> Result<Json<String>, HttpError> {
     body.validate_token("access_secrets")
-        .map_err(|e| HttpError::forbidden(e.to_string()))?;
+        .map_err(|e| HttpError::unauthorized(e.to_string()))?;
 
     Token::create_secret("access_secret");
     Token::create_secret("refresh_secret");
@@ -105,9 +105,8 @@ pub async fn profile(
     Path(username): Path<String>, 
     Json(body): Json<Token>
 ) -> Result<Json<String>, HttpError> {
-    let claims = body
-        .validate_token("access_secret")
-        .map_err(|e| HttpError::forbidden(e.to_string()))?;
+    let claims = body.validate_token("access_secret")
+        .map_err(|e| HttpError::unauthorized(e.to_string()))?;
 
     if claims.sub == username {
         return Ok(Json(claims.sub.to_owned()));
@@ -125,7 +124,6 @@ pub async fn profile(
 }
 
 pub async fn new_access(Extension(claims): Extension<Json<Claims>>) -> Result<Json<Token>, HttpError> {
-    Token::create_secret("access_secret");
     let token = Token::new_token(claims.sub.clone(), "access_secret", 1)
         .map_err(|e| HttpError::server_error(e.to_string()))?;
 

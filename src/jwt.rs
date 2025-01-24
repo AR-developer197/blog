@@ -1,4 +1,4 @@
-use std::{collections::HashSet, env};
+use std::env;
 
 use chrono::{Duration, Utc};
 use serde::{Deserialize, Serialize};
@@ -25,13 +25,12 @@ impl Token {
     }
     
     pub fn validate_token(&self, env_secret_name: &str) -> Result<Claims, HttpError> {
-        let secret = env::var(env_secret_name).unwrap();
+        let secret = env::var(env_secret_name)
+            .map_err(|e| HttpError::unauthorized(e.to_string()))?;
         let key = secret.as_ref();
         let key = &DecodingKey::from_secret(key);
 
-        let validation = &mut Validation::new(Algorithm::HS256);
-
-        let token_data = decode::<Claims>(&self.token, key, validation)
+        let token_data = decode::<Claims>(&self.token, key, &Validation::default())
             .map_err(|e| HttpError::unauthorized(e.to_string()))?;
 
         Ok(token_data.claims)
@@ -39,10 +38,10 @@ impl Token {
     
     pub fn new_token(sub: String, env_secret_name: &str, exp: i64) -> Result<Token, HttpError> {
         let now = Utc::now();
-        let exp = (now + Duration::minutes(exp)).timestamp() as usize;
-        let claims = Claims { sub, exp };
+        let exp = (now + Duration::seconds(exp)).timestamp() as usize;
+        let claims = Claims { sub, exp };    
 
-        Token::create_secret(env_secret_name);       
+        Token::create_secret(env_secret_name);
      
         let token = encode(
             &Header::default(), 
