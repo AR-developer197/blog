@@ -3,7 +3,7 @@ use axum_extra::extract::CookieJar;
 use hyper::header;
 use serde::Serialize;
 
-use crate::{error::{ErrorMessage, HttpError}, jwt::Token};
+use crate::{error::{ErrorMessage, HttpError}, jwt::{Claims, Token}};
 
 // pub async fn auth(mut req: Request, next: Next) -> Result<Response, HttpError> {
 //     let bytes = to_bytes(req.into_body().c, usize::MAX).await
@@ -33,8 +33,8 @@ pub async fn auth(jar: CookieJar, mut req: Request, next: Next) -> Result<Respon
 
     let claims = (Token{token}).validate_token("refresh_secret")
         .map_err(|e| HttpError::unauthorized(e.to_string()))?;
-    
-    next.run(req).await;
 
-    Ok(Json(claims).into_response())
+    req.extensions_mut().insert(claims);
+
+    Ok(next.run(req).await)
 }

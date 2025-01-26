@@ -5,6 +5,7 @@ use axum::{response::IntoResponse, Json};
 use axum_extra::extract::cookie::Cookie;
 use axum::http::{header, HeaderMap};
 
+use chrono::{Duration, Utc};
 use serde::Deserialize;
 use sqlx::Row;
 
@@ -62,10 +63,12 @@ pub async fn login(
         ));
     }
     
-    let access = Token::new_token(row.get("username"), "access_secret", 1)?;
-    let refresh = Token::new_token(row.get("username"), "refresh_secret", 3)?;
+    let access = Token::new_token(row.get("user_id"), "access_secret", 1)?;
+    let refresh = Token::new_token(row.get("user_id"), "refresh_secret", 3)?;
 
-    let cookie_duration = time::Duration::minutes(3).abs();
+    let expiration_duration = Duration::minutes(3);
+
+    let cookie_duration = time::Duration::seconds(expiration_duration.num_seconds() as i64).abs();
     let cookie = Cookie::build(("refresh_token", refresh.token))
         .path("/")
         .max_age(cookie_duration)
@@ -91,7 +94,7 @@ pub async fn login(
 }
 
 pub async fn logout(Json(body): Json<Token>) -> Result<Json<String>, HttpError> {
-    body.validate_token("access_secrets")
+    body.validate_token("access_secret")
         .map_err(|e| HttpError::unauthorized(e.to_string()))?;
 
     Token::create_secret("access_secret");
@@ -102,29 +105,25 @@ pub async fn logout(Json(body): Json<Token>) -> Result<Json<String>, HttpError> 
 
 pub async fn profile(
     DatabaseConnection(mut conn): DatabaseConnection,
-    Path(username): Path<String>, 
+    Path(id): Path<i32>, 
     Json(body): Json<Token>
 ) -> Result<Json<String>, HttpError> {
-    let claims = body.validate_token("access_secret")
+    body.validate_token("access_secret")
         .map_err(|e| HttpError::unauthorized(e.to_string()))?;
 
-    if claims.sub == username {
-        return Ok(Json(claims.sub.to_owned()));
-    };
-
-    let rows = sqlx::query("SELECT * FROM users WHERE username = ?")
-        .bind(username)
+    let row = sqlx::query("SELECT * FROM users WHERE user_id = $1")
+        .bind(id)
         .fetch_one(&mut *conn)
         .await
         .map_err(|e| HttpError::unique_violation(e.to_string()))?;
 
-    let user: String = rows.get("username");
+    let body_username: String = row.get("username");
 
-    Ok(Json(user))
+    Ok(Json(body_username.to_owned()))
 }
 
-pub async fn new_access(Extension(claims): Extension<Json<Claims>>) -> Result<Json<Token>, HttpError> {
-    let token = Token::new_token(claims.sub.clone(), "access_secret", 1)
+pub async fn new_access(Extension(claims): Extension<Claims>) -> Result<Json<Token>, HttpError> {
+    let token = Token::new_token(claims.sub, "access_secret", 1)
         .map_err(|e| HttpError::server_error(e.to_string()))?;
 
     Ok(Json(token))

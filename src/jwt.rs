@@ -2,7 +2,7 @@ use std::env;
 
 use chrono::{Duration, Utc};
 use serde::{Deserialize, Serialize};
-use jsonwebtoken::{self, decode, encode, EncodingKey, Header, DecodingKey, Validation, Algorithm};
+use jsonwebtoken::{self, decode, encode, EncodingKey, Header, DecodingKey, Validation};
 use uuid::Uuid;
 
 use crate::error::HttpError;
@@ -14,7 +14,7 @@ pub struct Token {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Claims {
-    pub sub: String,
+    pub sub: i32,
     pub exp: usize,
 }
 
@@ -36,9 +36,9 @@ impl Token {
         Ok(token_data.claims)
     }
     
-    pub fn new_token(sub: String, env_secret_name: &str, exp: i64) -> Result<Token, HttpError> {
+    pub fn new_token(sub: i32, env_secret_name: &str, exp: i64) -> Result<Token, HttpError> {
         let now = Utc::now();
-        let exp = (now + Duration::seconds(exp)).timestamp() as usize;
+        let exp = (now + Duration::minutes(exp)).timestamp() as usize;
         let claims = Claims { sub, exp };    
 
         Token::create_secret(env_secret_name);

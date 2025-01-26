@@ -11,7 +11,7 @@ pub fn create_user_routes() -> Router<sqlx::Pool<sqlx::Postgres>>{
         .route("/register", post(register))
         .route("/login", post(login))
         .route("/logout", post(logout).route_layer(from_fn(auth)))
-        .route("/refresh", put(new_access).route_layer(from_fn(auth)))
+        .route("/refresh", post(new_access).route_layer(from_fn(auth)))
         .route("/profile/{id}", get(profile).route_layer(from_fn(auth)));
 
     user_router

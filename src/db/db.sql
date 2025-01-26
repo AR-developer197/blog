@@ -5,8 +5,8 @@ CREATE TABLE users (
 );
 
 CREATE TABLE posts (
-    post_id int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    user_id int REFERENCES users(user_id),
+    post_id varchar(100) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    user_id varchar(100) REFERENCES users(user_id),
     title text NOT NULL,
     body text NOT NULL,
     publication_date DATE NOT NULL
