@@ -1,30 +1,11 @@
-use axum::{body::{to_bytes, Bytes}, extract::{FromRequest, Request}, middleware::Next, response::{IntoResponse, Response}, Json};
+use axum::{extract::Request, middleware::Next, response::Response};
 use axum_extra::extract::CookieJar;
-use hyper::header;
-use serde::Serialize;
 
-use crate::{error::{ErrorMessage, HttpError}, jwt::{Claims, Token}};
-
-// pub async fn auth(mut req: Request, next: Next) -> Result<Response, HttpError> {
-//     let bytes = to_bytes(req.into_body().c, usize::MAX).await
-//         .map_err(|e| HttpError::server_error(e.to_string()))?;
-
-//     let body = String::from_utf8(bytes.to_vec())
-//         .map_err(|e| HttpError::server_error(e.to_string()))?;
-
-//     let token: Token = serde_json::from_str(&body)
-//         .map_err(|e| HttpError::server_error(e.to_string()))?;
-
-//     println!("{:#?}", token);
-
-//     next.run(req).await;
-
-//     Ok(().into_response())
-// }
+use crate::{error::{ErrorMessage, HttpError}, jwt::Token};
 
 pub async fn auth(jar: CookieJar, mut req: Request, next: Next) -> Result<Response, HttpError> {
 
-        let cookies = jar
+    let cookies = jar
         .get("refresh_token")
         .map(|cookie| cookie.value().to_string());
 

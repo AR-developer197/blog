@@ -5,8 +5,7 @@ use axum::{response::IntoResponse, Json};
 use axum_extra::extract::cookie::Cookie;
 use axum::http::{header, HeaderMap};
 
-use chrono::{Duration, Utc};
-use serde::Deserialize;
+use chrono::Duration;
 use sqlx::Row;
 
 use crate::jwt::Claims;
@@ -16,13 +15,7 @@ use crate::{
     jwt::Token,
 };
 
-use super::{compare, hash_password};
-
-#[derive(Deserialize, Debug)]
-pub struct User {
-    username: String,
-    password: String,
-}
+use super::{compare, hash_password, User};
 
 pub async fn register(
     DatabaseConnection(mut conn): DatabaseConnection,

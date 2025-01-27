@@ -89,7 +89,6 @@ impl HttpError {
 
 impl IntoResponse for HttpError {
     fn into_response(self) -> axum::response::Response {
-        println!("{:#?}", self);
         self.into_error_response().into_response()
     }
 }

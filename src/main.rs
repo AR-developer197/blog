@@ -13,19 +13,12 @@ mod error;
 mod middleware;
 
 use handlers::{
-    comments, create_comments, create_post, create_user_routes, delete_comments, delete_post, get_post, get_posts, modify_post
+    comments, create_comments, create_user_routes, delete_comments, create_post_routes
 };
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     let pool = PgPool::connect(&dotenv::var("DB_URL_CONNECTION").unwrap()).await.unwrap();
-    
-    let posts_routes = Router::new()
-        .route("/", get(get_posts))
-        .route("/get/{id}", get(get_post))
-        .route("/create", post(create_post))
-        .route("/modify/{id}", put(modify_post))
-        .route("/delete/{id}", delete(delete_post));
 
     let comments_routes = Router::new()
         .route("/", get(comments))
@@ -41,7 +34,7 @@ async fn main() -> std::io::Result<()> {
     let app = Router::new()
         .route("/", get(|| async {"Hello World!"}))
         .nest("/users", create_user_routes())
-        .nest("/posts", posts_routes)
+        .nest("/posts", create_post_routes())
         .nest("/comments", comments_routes)
         .with_state(pool)
         .layer(cors);
