@@ -2,11 +2,11 @@ mod posts;
 
 use axum::{middleware::from_fn, routing::{delete, get, post, put}, Router};
 use posts::{create_post, delete_post, get_post, get_posts, modify_post};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-use crate::{jwt::Token, middleware::auth};
+use crate::middleware::auth;
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, sqlx::FromRow, Serialize)]
 pub struct Post {
     post_id: Option<i32>,
     user_id: Option<i32>,
