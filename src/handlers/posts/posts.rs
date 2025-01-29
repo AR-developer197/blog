@@ -57,10 +57,6 @@ pub async fn create_post(
     Ok("post created".to_owned())
 }
 
-pub async fn modify_post() -> &'static str {
-    "modify_post"
-}
-
 pub async fn delete_post(
     DatabaseConnection(mut conn): DatabaseConnection, 
     Path(id): Path<i32>,

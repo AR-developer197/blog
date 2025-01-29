@@ -1,7 +1,7 @@
 mod posts;
 
 use axum::{middleware::from_fn, routing::{delete, get, post, put}, Router};
-use posts::{create_post, delete_post, get_post, get_posts, modify_post};
+use posts::{create_post, delete_post, get_post, get_posts};
 use serde::{Deserialize, Serialize};
 
 use crate::middleware::auth;
@@ -26,7 +26,6 @@ pub fn create_post_routes() -> Router<sqlx::Pool<sqlx::Postgres>> {
         .route("/", get(get_posts))
         .route("/get/{id}", get(get_post))
         .route("/create", post(create_post))
-        .route("/modify/{id}", put(modify_post))
         .route("/delete/{id}", delete(delete_post))
         .layer(from_fn(auth));
 
