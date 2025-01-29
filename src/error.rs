@@ -61,7 +61,7 @@ impl HttpError {
         }
     }
 
-    pub fn unauthorized(error: impl Into<String>) -> Self {
+    pub fn unauthorized(error: impl Into<String> + std::fmt::Debug) -> Self {
         Self {
             status: StatusCode::UNAUTHORIZED,
             message: error.into()

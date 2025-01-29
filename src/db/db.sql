@@ -11,3 +11,10 @@ CREATE TABLE posts (
     body text NOT NULL,
     publication_date DATE NOT NULL
 );
+
+CREATE TABLE comments (
+    comment_id int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    post_id int REFERENCES posts(post_id),
+    user_id int REFERENCES users(user_id),
+    body text NOT NULL
+);

@@ -1,7 +1,9 @@
 use std::env;
 
+use chrono::{Duration, Utc};
 use serde::{Deserialize, Serialize};
-use jsonwebtoken::{self, decode, encode, EncodingKey, Header, DecodingKey, Validation, Algorithm};
+use jsonwebtoken::{self, decode, encode, EncodingKey, Header, DecodingKey, Validation};
+use time::Date;
 use uuid::Uuid;
 
 use crate::error::HttpError;
@@ -11,10 +13,10 @@ pub struct Token {
     pub token: String
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Claims {
-    pub aud: String,
-    pub exp: u64,
+    pub sub: i32,
+    pub exp: usize,
 }
 
 impl Token {
@@ -24,24 +26,28 @@ impl Token {
     }
     
     pub fn validate_token(&self, env_secret_name: &str) -> Result<Claims, HttpError> {
-        let key = &DecodingKey::from_secret(env::var(env_secret_name).unwrap().as_bytes());
-        let validation = &Validation::new(Algorithm::HS256);
-    
-        let token_data = decode::<Claims>(&self.token, key, validation)
+        let secret = env::var(env_secret_name)
+            .map_err(|e| HttpError::unauthorized(e.to_string()))?;
+        let key = secret.as_ref();
+        let key = &DecodingKey::from_secret(key);
+
+        let token_data = decode::<Claims>(&self.token, key, &Validation::default())
             .map_err(|e| HttpError::unauthorized(e.to_string()))?;
 
         Ok(token_data.claims)
     }
     
-    pub fn new_token(aud: String, env_secret_name: &str, exp: i64) -> Result<Token, HttpError> {
-        let current_time= time::Duration::minutes(3).whole_seconds() as u64;
-        
-        let claims = Claims { aud, exp: exp.try_into().unwrap() };
+    pub fn new_token(sub: i32, env_secret_name: &str, exp: i64) -> Result<Token, HttpError> {
+        let now = Utc::now();
+        let exp = (now + Duration::minutes(exp)).timestamp() as usize;
+        let claims = Claims { sub, exp };    
+
+        Token::create_secret(env_secret_name);
      
         let token = encode(
             &Header::default(), 
             &claims,  
-            &EncodingKey::from_secret(std::env::var(env_secret_name).unwrap().as_bytes())
+            &EncodingKey::from_secret(env::var(env_secret_name).unwrap().as_ref())
         )
             .map_err(|e| HttpError::server_error(e.to_string()))?;
 
